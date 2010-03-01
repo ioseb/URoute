@@ -1,0 +1,6 @@
+RewriteEngine On
+RewriteBase /URoute/samples
+
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule (.*) index.php
