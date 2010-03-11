@@ -207,8 +207,6 @@ class URoute_Template implements URoute_Constants {
         
       }
       
-      throw new URoute_InvalidPathException('Invalid path');
-      
     } catch(Exception $ex) {
       throw $ex;
     }
@@ -282,11 +280,13 @@ class URoute_Router {
   
         if (!is_null($params)) {
           $callback = URoute_Callback::getCallback($route['callback'], $route['file']);
-          call_user_func($callback, $params);          
+          return call_user_func($callback, $params);
         }
         
       }
-    
+      
+      throw new URoute_InvalidPathException('Invalid path');
+      
     } catch (Exception $ex) {
       throw $ex;
     }
