@@ -280,8 +280,8 @@ class URoute_Router {
   
         if (!is_null($params)) {
           $callback = URoute_Callback::getCallback($route['callback'], $route['file']);
-          $env = self::getEnv();
-          return call_user_func($callback, $params, $env);
+          $data = self::getEnv();
+          return call_user_func($callback, $params, $data);
         }
         
       }
