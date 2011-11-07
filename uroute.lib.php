@@ -280,7 +280,8 @@ class URoute_Router {
   
         if (!is_null($params)) {
           $callback = URoute_Callback::getCallback($route['callback'], $route['file']);
-          return call_user_func($callback, $params);
+          $data = self::getEnv();
+          return call_user_func($callback, $params, $data);
         }
         
       }
@@ -293,6 +294,33 @@ class URoute_Router {
     
   }
   
+  private static function getEnv() {
+    $env = new stdClass;
+    
+    $env->method = $_SERVER['REQUEST_METHOD'];
+    
+    $env->clientIP = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : "";
+    $env->clientIP = (empty($env->clientIP) && !empty($_SERVER['REMOTE_ADDR'])) ? $_SERVER['REMOTE_ADDR'] : "";  
+    
+    $env->userAgent = empty($_SERVER['HTTP_USER_AGENT']) ? "" : $_SERVER['HTTP_USER_AGENT'];    
+    
+    switch ($env->method) {
+        case "GET":
+            $env->requestData = $_GET;
+            break;                
+        case "POST":
+            $env->requestData = $_POST;
+            break;                
+        case "PUT":
+        case "DELETE":
+            parse_str(file_get_contents("php://input"), $env->requestData);
+            break;                
+    }
+    
+    return (array)$env;
+    
+  }
+  
 } // end URoute_Router
 
 abstract class URoute_Service implements URoute_Constants {
@@ -302,7 +330,7 @@ abstract class URoute_Service implements URoute_Constants {
   private $path;
   private $endPoint;
   private $requestURI;
-  
+
   public function __construct() {
     $this->init();
   }
@@ -313,7 +341,7 @@ abstract class URoute_Service implements URoute_Constants {
     $this->service();
     $this->route();
   }
-  
+    
   private function setHost() {
     $host = $_SERVER['SERVER_NAME'];
     if (!preg_match('~^http~', $host, $matches)) {
