@@ -18,7 +18,7 @@ To start serving RESTful HTTP requests, you need to go through two simple steps:
 
 You need to register a PHP script to handle all HTTP requests. For Apache it would look something like the following: 
 
-```bash
+```Ruby
 RewriteEngine On
 RewriteRule "(^|/)\." - [F]
 RewriteCond %{REQUEST_FILENAME} !-f
