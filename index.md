@@ -18,20 +18,20 @@ To start serving RESTful HTTP requests, you need to go through two simple steps:
 
 You need to register a PHP script to handle all HTTP requests. For Apache it would look something like the following: 
 
-```Ruby
+<pre>
 RewriteEngine On
 RewriteRule "(^|/)\." - [F]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_URI} !=/favicon.ico
 RewriteRule ^ /your_www_root/api.php [NC,NS,L]
-```
+</pre>
 
 ## Instantiating And Configuring A Router
 
 For a very simple case of getting specific user object, the code of api.php would look something like:
 
-```php
+<pre>
 require_once(dirname(__FILE__) . '/URoute/uroute.lib.php');
 
 $router = new URoute_Router();
@@ -46,4 +46,4 @@ $router->addRoute(array(
 );
 
 $router->route();
-```
+</pre>
