@@ -9,7 +9,8 @@ URoute is a light-weight HTTP Routing library for PHP. It is optimized for quick
 
 # Quick Introduction
 
-To start serving RESTful HTTP requests, you need to go through two simple steps:
+To start serving RESTful HTTP requests, you need to go through three simple steps:
+
 1. Setup URoute Library
 1. Instantiate and configure a router object
 1. Write callbacks/controllers.
