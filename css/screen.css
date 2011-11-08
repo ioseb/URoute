@@ -53,12 +53,20 @@ code, pre, tt, textarea {
   white-space: pre-wrap;
   word-wrap: break-word;
 }
-
 pre {
-  padding: 10px;
-  font-family: Monaco, Consolas, "Lucida Console", monospace;
-  font-size: 85.7142857%; /** 12/14 **/
+  font-size: 12px; /** 12/14 **/
+  padding: 2px 0 2px 12px;
+  border-left: 6px solid #AA9;
+  margin: 0px 0 30px;
 }
+code, pre, tt {
+  font-family: Monaco, Consolas, "Lucida Console", monospace;
+  font-size: 12px;
+  line-height: 18px;
+  color: #555529;
+}
+
+
 
 div#column ul {
     list-style: none;
