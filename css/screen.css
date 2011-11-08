@@ -57,6 +57,7 @@ pre {
   font-size: 12px; /** 12/14 **/
   padding: 2px 0 2px 12px;
   border-left: 6px solid #AA9;
+  background-color: #dfdfdf;
   margin: 0px 0 30px;
 }
 code, pre, tt {
