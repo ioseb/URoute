@@ -1,11 +1,18 @@
 <?php
 
+/** Invalid path exception **/
 class URoute_InvalidPathException extends Exception {}
+/** File not found exception **/
 class URoute_CallbackFileNotFoundException extends Exception {}
+/** Invalid callback exception **/
 class URoute_InvalidCallbackException extends Exception {}
+/** Invalid URI Parameter exception **/
 class URoute_InvalidURIParameterException extends Exception {}
 
-interface URoute_Constants {
+/**
+* Handy regexp patterns for common types of URI parameters.
+*/
+final class URoute_Constants {
   const PATTERN_ARGS       = '?(?P<%s>(?:/.+)+)';
   const PATTERN_ARGS_ALPHA = '?(?P<%s>(?:/[-\w]+)+)';
   const PATTERN_WILD_CARD  = '(?P<%s>.*)';
@@ -19,7 +26,10 @@ interface URoute_Constants {
   const PATTERN_MD5        = '(?P<%s>[a-z0-9]{32})';  
 }
 
-class URoute_Callback {
+/**
+* Callback class for route-processing.
+*/
+class URoute_Callback_Util {
   
   private static function loadFile($file) {
     if (file_exists($file)) {
@@ -32,7 +42,7 @@ class URoute_Callback {
   }
   
   public static function getCallback($callback, $file = null) {
-
+  
     try {
     
       if ($file) {
@@ -69,7 +79,7 @@ class URoute_Callback {
   
 }
 
-class URoute_Template implements URoute_Constants {
+class URoute_Template {
   
   private static $globalQueryParams = array();
   
@@ -221,13 +231,14 @@ class URoute_Template implements URoute_Constants {
 
 class URoute_Router {
   
-  private static $routes  = array();
-  private static $methods = array('get', 'post', 'put', 'delete', 'head', 'options');
+  protected $routes  = array();
+  protected static $methods = array('get', 'post', 'put', 'delete', 'head', 'options');
   
-  public static function addRoute($params, URoute_Service $service) {
+  /**
+  * Add a new route to the configured list of routes
+  */
+  public function addRoute($params) {
     
-    static $routes = array();
-  
     if (!empty($params['path'])) {
       
       $template = new URoute_Template($params['path']);
@@ -237,18 +248,11 @@ class URoute_Router {
            $template->pattern($key, $pattern);
         }
       }
-      
-      if (isset($params['file'])) {
-        $file = trim($params['file'], '\/');
-        $params['file'] = sprintf('%s/%s', $service->getDirName(), $file);
-      } else {
-        $params['file'] = null;
-      }
-      
+            
       $methods = array_intersect(self::$methods, array_keys($params));
 
       foreach ($methods as $method) {
-        self::$routes[$method][$params['path']] = array(
+        $this->routes[$method][$params['path']] = array(
           'template' => $template,
           'callback' => $params[$method],
           'file'     => $params['file'],
@@ -263,15 +267,21 @@ class URoute_Router {
     return strtolower($_SERVER['REQUEST_METHOD']);
   }
   
-  private static function getRoutes() {
+  private function getRoutes() {
     $method = self::getRequestMethod();
-    return isset(self::$routes[$method]) ? self::$routes[$method] : array();
+    $routes = empty($this->routes[$method]) ? array() : $this->routes[$method];
+    return $routes;
   }
   
-  public static function route($uri) {
+  public function route($uri=null) {
   
-    $routes = self::getRoutes();
-    
+    if (empty($uri)) {
+      $tokens = parse_url($_SERVER['REQUEST_URI']);
+      $uri = $tokens['path'];
+    }
+  
+    $routes = $this->getRoutes();
+        
     try {
     
       foreach ($routes as $route) {
@@ -279,11 +289,10 @@ class URoute_Router {
         $params = $route['template']->match($uri);
   
         if (!is_null($params)) {
-          $callback = URoute_Callback::getCallback($route['callback'], $route['file']);
-          $data = self::getEnv();
+          $callback = URoute_Callback_Util::getCallback($route['callback'], $route['file']);
+          $data = $this->getEnv();
           return call_user_func($callback, $params, $data);
-        }
-        
+        }        
       }
       
       throw new URoute_InvalidPathException('Invalid path');
@@ -294,7 +303,7 @@ class URoute_Router {
     
   }
   
-  private static function getEnv() {
+  private function getEnv() {
     $env = new stdClass;
     
     $env->method = $_SERVER['REQUEST_METHOD'];
@@ -323,71 +332,3 @@ class URoute_Router {
   
 } // end URoute_Router
 
-abstract class URoute_Service implements URoute_Constants {
-  
-  private $dirname;
-  private $host;
-  private $path;
-  private $endPoint;
-  private $requestURI;
-
-  public function __construct() {
-    $this->init();
-  }
-  
-  private function init() {    
-    $this->setHost();
-    $this->setEndPoint();
-    $this->service();
-    $this->route();
-  }
-    
-  private function setHost() {
-    $host = $_SERVER['SERVER_NAME'];
-    if (!preg_match('~^http~', $host, $matches)) {
-      $host = 'http://' . $host;
-    }
-    $this->host = $host;
-  }
-  
-  private function setRequestURI() {
-    $tokens = parse_url($_SERVER['REQUEST_URI']);
-    $path   = str_replace($this->path, '', $tokens['path']);
-    $this->requestURI = $path == '/' ? '' : $path;
-  }
-  
-  protected function setEndPoint() {
-    $class   = new ReflectionClass($this);
-    $file    = $class->getFileName();
-    $dirname = dirname($file);
-    $path    = str_replace($_SERVER['DOCUMENT_ROOT'], '', $dirname);
-    
-    $this->dirname  = $dirname;
-    $this->path     = $path;
-    $this->endPoint = $this->host . $this->path;
-    
-    $this->setRequestURI();
-  }
-  
-  public function addRoute($params) {
-    URoute_Router::addRoute($params, $this);
-  }
-  
-  public function route() {
-    try {
-      URoute_Router::route($this->requestURI);
-    } catch(Exception $ex) {
-      $this->error($ex);
-    }
-  }
-  
-  public function getDirName() {
-    return $this->dirname;
-  }
-  
-  protected abstract function service();
-  protected abstract function error($exception);
-  
-}
-
-?>
