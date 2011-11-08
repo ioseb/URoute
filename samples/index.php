@@ -7,9 +7,9 @@ $router = new URoute_Router();
 $router->addRoute(array(
       'path'     => '/pages/{id}/{categories}/{name}/{year}',
       'handlers' => array(
-        'id'         => self::PATTERN_DIGIT, //regex
-        'categories' => self::PATTERN_ARGS,  //regex
-        'name'       => self::PATTERN_ANY,   //regex
+        'id'         => URoute_Constants::PATTERN_DIGIT, //regex
+        'categories' => URoute_Constants::PATTERN_ARGS,  //regex
+        'name'       => URoute_Constants::PATTERN_ANY,   //regex
         'year'       => 'handle_year',       //callback function
       ),
       'get'      => array('MyController', 'getPage'),
