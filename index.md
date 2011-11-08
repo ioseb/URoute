@@ -40,7 +40,7 @@ $router = new URoute_Router();
 $router->addRoute(array(
       'path'     => '/users/{id}',
       'handlers' => array(
-        'id'         => self::PATTERN_DIGIT, //regex
+        'id'         => URoute_Constants::PATTERN_DIGIT, //regex
       ),
       'get'      => array('MyController', 'getPage'),
     )
@@ -48,3 +48,15 @@ $router->addRoute(array(
 
 $router->route();
 </pre>
+
+In this example, {id} is a URI parameter, so `MyController->getPage()` function will get control to serve URLs like:
+
+* http://example.com/users/32424
+* http://example.com/users/23
+
+However, we asked the library to ascertain that the {id} parameter is a number by attaching a validating handler: "URoute_Constants::PATTERN_DIGIT" to it. As such, following URL will not be handed over to the `MyController->getPage()` callback:
+
+* http://example.com/users/ertla
+* http://example.com/users/asda32424
+* http://example.com/users/32424sfsd
+* http://example.com/users/324sdf24
