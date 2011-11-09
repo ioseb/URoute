@@ -103,38 +103,32 @@ URoute_Request Object
 (
 	[id] => 234234
 )
-
 [data] => Array
 	(
 	  [api] => 46546456456
 	)
-
 [formats] => Array
 	(
 	  [0] => text/html
 	  [1] => application/xhtml+xml
 	  [2] => application/xml
 	)
-
 [encodings] => Array
 	(
 	  [0] => gzip
 	  [1] => deflate
 	  [2] => sdch
 	)
-
 [charsets] => Array
 	(
 	  [0] => ISO-8859-1
 	  [1] => utf-8
 	)
-
 [languages] => Array
 	(
 	  [0] => en-US
 	  [1] => en
 	)
-
 [version] => 
 [method] => GET
 [clientIP] => 172.30.25.142
