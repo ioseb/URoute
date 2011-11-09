@@ -83,6 +83,11 @@ function pre($o) {
 }
 </pre>
 
+When invoked callbacks get two arguments:
+
+1. $params array contains all the placeholders matched in the URL (e.g. the value of the "id" argument)
+2. $data array contains HTTP data, which in the case of HTTP GET is: parsed request parameters, for HTTP POST, PUT and DELETE: data variables contained in the HTTP Body of the request.
+
 # A More Advanced Router Example
 
 <pre>
