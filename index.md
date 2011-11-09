@@ -89,7 +89,7 @@ function pre($o) {
 
 When invoked callbacks get two arguments:
 
-  1. $req (request) object contains data parsed from the request, and can include properties like:
+1. $req (request) object contains data parsed from the request, and can include properties like:
 	    1. $params - which contains all the placeholders matched in the URL (e.g. the value of the "id" argument)
 	    1. $data  - an array that contains HTTP data. In case of HTTP GET it is: parsed request parameters, for HTTP POST, PUT and DELETE requests: data variables contained in the HTTP Body of the request.
 	    1. $version - version of the API if one is versioned (not yet implemented)
