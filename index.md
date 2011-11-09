@@ -89,8 +89,12 @@ function pre($o) {
 
 When invoked callbacks get two arguments:
 
-1. $params array contains all the placeholders matched in the URL (e.g. the value of the "id" argument)
-2. $data array contains HTTP data, which in the case of HTTP GET is: parsed request parameters, for HTTP POST, PUT and DELETE: data variables contained in the HTTP Body of the request.
+1. $req (request) object contains data parsed from the request, and can include properties like:
+	1. $params - which contains all the placeholders matched in the URL (e.g. the value of the "id" argument)
+	2. $data  - an array that contains HTTP data, which in the case of HTTP GET is: parsed request parameters, for HTTP POST, PUT and DELETE: data variables contained in the HTTP Body of the request.
+	3. $version - version of the API if one is versioned (not yet implemented)
+	4. $format - data format that was requested (e.g. XML, JSON etc.)
+2. $res (response) object is used to incrementally create content. You can add chunks of text to the output buffer by calling: $res->add (String) and once you are done you can send entire buffer to the HTTP client by issuing: $res->send(<HTTP_RESPONSE_CODE>). HTTP_RESPONSE_CODE is an optional parameter which defaults to (you guessed it:) 200.
 
 # A More Advanced Router Example
 
