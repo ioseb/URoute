@@ -66,14 +66,16 @@ However, we asked the library to ascertain that the {id} parameter is a number b
 <pre>
 class MyController {
 
-	public function getPage($params, $data) {
-	    pre($params);
-	    pre($data);
+	public function getPage($req, $res) {
+		$res->add(pre($req->params));
+	    $res->add(pre($req->data));
+	    $res->send(301);    
 	}
 
-	public function postPage($params, $data) {
-		pre($params);
-		pre($data);
+	public function postPage($req, $res) {
+		$res->add(pre($req->params));
+	    $res->add(pre($req->data));
+	    $res->send(301);    
 	}
 
 }	
