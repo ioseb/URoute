@@ -8,6 +8,9 @@ class URoute_CallbackFileNotFoundException extends Exception {}
 class URoute_InvalidCallbackException extends Exception {}
 /** Invalid URI Parameter exception **/
 class URoute_InvalidURIParameterException extends Exception {}
+/** Invalid HTTP Response Code exception **/
+class URoute_InvalidResponseCodeException extends Exception {}
+
 
 /**
 * Handy regexp patterns for common types of URI parameters.
@@ -229,6 +232,101 @@ class URoute_Template {
   
 }
 
+
+/**
+* Response class
+*/
+class URoute_Response {
+
+  public $chunks = array();
+
+  /**
+  * Send output to the client
+  */
+  public function add($out) {    
+    $this->chunks[]  = $out;    
+  }
+  
+  /**
+  * Send output to client
+  *
+  *  @param $code
+  *      HTTP Code
+  */
+  public function send($code=200) {  
+    $codes = $this->codes();
+    if (array_key_exists($code, $codes)) {
+      $resp_text = $codes[$code];
+      header("HTTP/1.1 $code $resp_text");
+    } else {
+      throw new URoute_InvalidResponseCodeException("Invalid Response Code: " . $code);
+    }
+    
+    $out = implode("", $this->chunks);
+    echo ($out);
+    exit(); //prevent any further output
+  }
+  
+  private function codes() {
+    return array(  
+      '100' => 'Continue',
+      '101' => 'Switching Protocols',
+      '200' => 'OK',
+      '201' => 'Created',
+      '202' => 'Accepted',
+      '203' => 'Non-Authoritative Information',
+      '204' => 'No Content',
+      '205' => 'Reset Content',
+      '206' => 'Partial Content',
+      '300' => 'Multiple Choices',
+      '301' => 'Moved Permanently',
+      '302' => 'Found',
+      '303' => 'See Other',
+      '304' => 'Not Modified',
+      '305' => 'Use Proxy',
+      '307' => 'Temporary Redirect',      
+      '400' => 'Bad Request',
+      '401' => 'Unauthorized',
+      '402' => 'Payment Required',
+      '403' => 'Forbidden',
+      '404' => 'Not Found',
+      '405' => 'Method Not Allowed',
+      '406' => 'Not Acceptable',
+      '407' => 'Proxy Authentication Required',
+      '408' => 'Request Timeout',
+      '409' => 'Conflict',
+      '410' => 'Gone',
+      '411' => 'Length Required',
+      '412' => 'Precondition Failed',
+      '413' => 'Request Entity Too Large',
+      '414' => 'Request-URI Too Long',
+      '415' => 'Unsupported Media Type',
+      '416' => 'Requested Range Not Satisfiable',
+      '417' => 'Expectation Failed',
+      '500' => 'Internal Server Error',
+      '501' => 'Not Implemented',
+      '502' => 'Bad Gateway',
+      '503' => 'Service Unavailable',
+      '504' => 'Gateway Timeout',
+      '505' => 'HTTP Version Not Supported',    
+    );
+  }
+  
+} // end URoute_Request
+
+
+/**
+* HTTP Request class
+*/
+class URoute_Request {
+  public $params;
+  public $data;
+  public $format;
+  public $version;
+  
+} // end URoute_Request
+
+
 class URoute_Router {
   
   protected $routes  = array();
@@ -291,7 +389,13 @@ class URoute_Router {
         if (!is_null($params)) {
           $callback = URoute_Callback_Util::getCallback($route['callback'], $route['file']);
           $data = $this->getEnv();
-          return call_user_func($callback, $params, $data);
+          
+          $req = new URoute_Request();
+            $req->params = $params;
+            $req->data = $data;          
+          $res = new URoute_Response();
+          
+          return call_user_func($callback, $req, $res);
         }        
       }
       

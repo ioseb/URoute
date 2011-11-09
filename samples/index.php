@@ -26,7 +26,3 @@ function handle_year($param) {
     'ba' => 'booooo',
   ) : null;
 }
-
-function pre($o) {
-  printf('<pre>%s</pre>', print_r($o, true));
-}
