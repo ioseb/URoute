@@ -38,12 +38,12 @@ require_once(dirname(__FILE__) . '/URoute/uroute.lib.php');
 $router = new URoute_Router();
 
 $router->addRoute(array(
-      'path'     => '/users/{id}',
-      'handlers' => array(
-        'id'         => URoute_Constants::PATTERN_DIGIT, //regex
-      ),
-      'get'      => array('MyController', 'getPage'),
-    )
+	  'path'     => '/users/{id}',
+	  'handlers' => array(
+	    'id'         => URoute_Constants::PATTERN_DIGIT, //regex
+	  ),
+	  'get'      => array('MyController', 'getPage'),
+	)
 );
 
 $router->route();
@@ -89,57 +89,57 @@ function pre($o) {
 
 When invoked callbacks get two arguments:
 
-1. $req (request) object contains data parsed from the request, and can include properties like:
-	1. $params - which contains all the placeholders matched in the URL (e.g. the value of the "id" argument)
-	2. $data  - an array that contains HTTP data. In case of HTTP GET it is: parsed request parameters, for HTTP POST, PUT and DELETE requests: data variables contained in the HTTP Body of the request.
-	3. $version - version of the API if one is versioned (not yet implemented)
-	4. $format - data format that was requested (e.g. XML, JSON etc.)
+    1. $req (request) object contains data parsed from the request, and can include properties like:
+	  1. $params - which contains all the placeholders matched in the URL (e.g. the value of the "id" argument)
+	  1. $data  - an array that contains HTTP data. In case of HTTP GET it is: parsed request parameters, for HTTP POST, PUT and DELETE requests: data variables contained in the HTTP Body of the request.
+	  1. $version - version of the API if one is versioned (not yet implemented)
+	  1. $format - data format that was requested (e.g. XML, JSON etc.)
 	
 	Following is an example request object:
 	<pre>
 URoute_Request Object
 (
-    [params] => Array
-        (
-            [id] => 234234
-        )
+[params] => Array
+(
+	[id] => 234234
+)
 
-    [data] => Array
-        (
-            [api] => 46546456456
-        )
+[data] => Array
+	(
+	  [api] => 46546456456
+	)
 
-    [formats] => Array
-        (
-            [0] => text/html
-            [1] => application/xhtml+xml
-            [2] => application/xml
-        )
+[formats] => Array
+	(
+	  [0] => text/html
+	  [1] => application/xhtml+xml
+	  [2] => application/xml
+	)
 
-    [encodings] => Array
-        (
-            [0] => gzip
-            [1] => deflate
-            [2] => sdch
-        )
+[encodings] => Array
+	(
+	  [0] => gzip
+	  [1] => deflate
+	  [2] => sdch
+	)
 
-    [charsets] => Array
-        (
-            [0] => ISO-8859-1
-            [1] => utf-8
-        )
+[charsets] => Array
+	(
+	  [0] => ISO-8859-1
+	  [1] => utf-8
+	)
 
-    [languages] => Array
-        (
-            [0] => en-US
-            [1] => en
-        )
+[languages] => Array
+	(
+	  [0] => en-US
+	  [1] => en
+	)
 
-    [version] => 
-    [method] => GET
-    [clientIP] => 172.30.25.142
-    [userAgent] => Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.2 (KHTML, like Gecko) Chrome/15.0.874.106 Safari/535.2
-    [protocol] => HTTP/1.1
+[version] => 
+[method] => GET
+[clientIP] => 172.30.25.142
+[userAgent] => Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.2 (KHTML, like Gecko) Chrome/15.0.874.106 Safari/535.2
+[protocol] => HTTP/1.1
 )		
 	</pre>
 2. $res (response) object is used to incrementally create content. You can add chunks of text to the output buffer by calling: $res->add (String) and once you are done you can send entire buffer to the HTTP client by issuing: $res->send(<HTTP_RESPONSE_CODE>). HTTP_RESPONSE_CODE is an optional parameter which defaults to (you guessed it:) 200.
