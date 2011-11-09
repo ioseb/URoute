@@ -81,7 +81,9 @@ class MyController {
 }	
 
 function pre($o) {
-  printf('&lt;pre&gt;%s&lt;/pre&gt;', print_r($o, true));
+  return strtr('<pre>%s</pre>', 
+               array('%s' => print_r($o, true))
+         );
 }
 </pre>
 
