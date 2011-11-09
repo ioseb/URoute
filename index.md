@@ -94,9 +94,7 @@ When invoked callbacks get two arguments:
 	    1. $data  - an array that contains HTTP data. In case of HTTP GET it is: parsed request parameters, for HTTP POST, PUT and DELETE requests: data variables contained in the HTTP Body of the request.
 	    1. $version - version of the API if one is versioned (not yet implemented)
 	    1. $format - data format that was requested (e.g. XML, JSON etc.)
-	
   Following is an example request object:
-
 		URoute_Request Object
 		(
 		[params] => Array
