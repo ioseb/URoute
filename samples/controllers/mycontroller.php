@@ -2,14 +2,14 @@
 
 class MyController {
 	
-	public function getPage($params, $data) {
-		pre($params);
-		pre($data);
-	}
+  public function getPage($req, $res) {
+    pre($req->params);
+    pre($req->data);
+  }
 	
-	public function postPage($params, $data) {
-  	pre($params);
-  	pre($data);	
-	}
+  public function postPage($req, $res) {
+    pre($req->params);
+    pre($req->data);	
+  }
 	
 }
