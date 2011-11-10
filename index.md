@@ -5,7 +5,9 @@ title: URoute Library
 
 # What is URoute?
 
-URoute is a light-weight HTTP Routing library for PHP. It is optimized for quick development of robust, standards-compliant RESTful web-services.  
+URoute is a swiss-army tool for developing RESTful HTTP APIs in PHP. It's a lightweight library that has a single purpose: free API developers from the boilerplate of handling HTTP requests and implementing REST. 
+
+You can think of it as equivalent of Sinatra (Ruby) or Express.js (Javascript) for PHP, if you will.
 
 # Quick Introduction
 
