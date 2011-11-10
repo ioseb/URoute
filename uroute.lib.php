@@ -1,11 +1,21 @@
 <?php
 
+/** Invalid path exception **/
 class URoute_InvalidPathException extends Exception {}
+/** File not found exception **/
 class URoute_CallbackFileNotFoundException extends Exception {}
+/** Invalid callback exception **/
 class URoute_InvalidCallbackException extends Exception {}
+/** Invalid URI Parameter exception **/
 class URoute_InvalidURIParameterException extends Exception {}
+/** Invalid HTTP Response Code exception **/
+class URoute_InvalidResponseCodeException extends Exception {}
 
-interface URoute_Constants {
+
+/**
+* Handy regexp patterns for common types of URI parameters.
+*/
+final class URoute_Constants {
   const PATTERN_ARGS       = '?(?P<%s>(?:/.+)+)';
   const PATTERN_ARGS_ALPHA = '?(?P<%s>(?:/[-\w]+)+)';
   const PATTERN_WILD_CARD  = '(?P<%s>.*)';
@@ -19,7 +29,10 @@ interface URoute_Constants {
   const PATTERN_MD5        = '(?P<%s>[a-z0-9]{32})';  
 }
 
-class URoute_Callback {
+/**
+* Callback class for route-processing.
+*/
+class URoute_Callback_Util {
   
   private static function loadFile($file) {
     if (file_exists($file)) {
@@ -32,7 +45,7 @@ class URoute_Callback {
   }
   
   public static function getCallback($callback, $file = null) {
-
+  
     try {
     
       if ($file) {
@@ -66,15 +79,10 @@ class URoute_Callback {
     }
     
   }
-  
 }
 
-class URoute_Template implements URoute_Constants {
-  
-  private static $globalQueryParams = array();
-  
+class URoute_Template {
   private $template  = null;
-  private $params    = array();
   private $callbacks = array();
   
   public function __construct($path) {
@@ -120,34 +128,11 @@ class URoute_Template implements URoute_Constants {
       }
       
       return sprintf($pattern, $token);
-       
     }    
   }
   
-  public function addQueryParam($name, $pattern = '', $defaultValue = null) {
-    if (!$pattern) {
-      $pattern = self::PATTERN_ANY;
-    }
-    $this->params[$name] = (object) array(
-      'pattern' => sprintf($pattern, $name),
-      'value'   => $defaultValue
-    );
-  }
-  
-  public static function addGlobalQueryParam($name, $pattern = '', $defaultValue = null) {
-    if (!$pattern) {
-      $pattern = self::PATTERN_ANY;
-    }
-    self::$globalQueryParams[$name] = (object) array(
-      'pattern' => sprintf($pattern, $name),
-      'value'   => $defaultValue
-    );
-  }
-  
   public function match($uri) {
-    
     try {
-    
       $uri = rtrim($uri, '\/');
       
       if (preg_match($this->getExpression(), $uri, $matches)) {
@@ -173,61 +158,217 @@ class URoute_Template implements URoute_Constants {
           }
         }
   
-        $params = array_merge(self::$globalQueryParams, $this->params);
-  
-        if (!empty($params)) {
-          
-          $matched = false;
-          
-          foreach($params as $name=>$param) {
-            
-            if (!isset($_GET[$name]) && $param->value) {
-              $_GET[$name] = $param->value;
-              $matched = true;
-            } else if ($param->pattern && isset($_GET[$name])) {
-              $result = preg_match(sprintf('~^%s$~', $param->pattern), $_GET[$name]);
-              if (!$result && $param->value) {
-                $_GET[$name] = $param->value;
-                $result = true;
-              }
-              $matched = $result;
-            } else {
-              $matched = false;
-            }          
-            
-            if ($matched == false) {
-              throw new Exception('Request do not match');
-            }
-            
-          }
-          
-        }
-        
-        return $matches;
-        
+        return $matches;      
       }
       
     } catch(Exception $ex) {
       throw $ex;
     }
-    
   }
   
   public static function regex($pattern) {
     return '(?P<%s>' . $pattern . ')';
   }
-  
 }
+
+
+/**
+* Response class
+*/
+class URoute_Response {
+
+  /** Ordered chunks of the output buffer **/
+  public $chunks = array();
+  
+  private $req;
+
+  function __construct($request=null) {
+    $this->req = $request;  
+  }
+  
+  /**
+  * Send output to the client
+  */
+  public function add($out) {    
+    $this->chunks[]  = $out;    
+  }
+  
+  /**
+  * Send output to client and end request
+  *
+  *  @param $code
+  *      HTTP Code
+  */
+  public function send($code=200) {  
+    $codes = $this->codes();
+    if (array_key_exists($code, $codes)) {
+      $resp_text = $codes[$code];
+      $protocol = $this->req->protocol;
+      header("$protocol $code $resp_text");
+    } else {
+      throw new URoute_InvalidResponseCodeException("Invalid Response Code: " . $code);
+    }
+    
+    $format = $this->req->format;
+    header("Content-Type: $format;");    
+    
+    $out = implode("", $this->chunks);
+    echo ($out);
+    exit(); //prevent any further output
+  }
+    
+  private function codes() {
+    return array(  
+      '100' => 'Continue',
+      '101' => 'Switching Protocols',
+      '200' => 'OK',
+      '201' => 'Created',
+      '202' => 'Accepted',
+      '203' => 'Non-Authoritative Information',
+      '204' => 'No Content',
+      '205' => 'Reset Content',
+      '206' => 'Partial Content',
+      '300' => 'Multiple Choices',
+      '301' => 'Moved Permanently',
+      '302' => 'Found',
+      '303' => 'See Other',
+      '304' => 'Not Modified',
+      '305' => 'Use Proxy',
+      '307' => 'Temporary Redirect',      
+      '400' => 'Bad Request',
+      '401' => 'Unauthorized',
+      '402' => 'Payment Required',
+      '403' => 'Forbidden',
+      '404' => 'Not Found',
+      '405' => 'Method Not Allowed',
+      '406' => 'Not Acceptable',
+      '407' => 'Proxy Authentication Required',
+      '408' => 'Request Timeout',
+      '409' => 'Conflict',
+      '410' => 'Gone',
+      '411' => 'Length Required',
+      '412' => 'Precondition Failed',
+      '413' => 'Request Entity Too Large',
+      '414' => 'Request-URI Too Long',
+      '415' => 'Unsupported Media Type',
+      '416' => 'Requested Range Not Satisfiable',
+      '417' => 'Expectation Failed',
+      '500' => 'Internal Server Error',
+      '501' => 'Not Implemented',
+      '502' => 'Bad Gateway',
+      '503' => 'Service Unavailable',
+      '504' => 'Gateway Timeout',
+      '505' => 'HTTP Version Not Supported',    
+    );
+  }
+  
+} // end URoute_Request
+
+
+/**
+* HTTP Request class
+*/
+class URoute_Request {
+  public $params;
+  public $data;
+  public $format;
+  public $accepted_formats;
+  public $encodings;
+  public $charsets;  
+  public $languages;  
+  public $version;
+  public $method;
+  public $clientIP;
+  public $userAgent;
+  public $protocol;
+  
+  function __construct() {
+    $this->method = $_SERVER['REQUEST_METHOD'];
+    
+    $this->clientIP = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : "";
+    $this->clientIP = (empty($this->clientIP) && !empty($_SERVER['REMOTE_ADDR'])) ? $_SERVER['REMOTE_ADDR'] : "";  
+    
+    $this->userAgent = empty($_SERVER['HTTP_USER_AGENT']) ? "" : $_SERVER['HTTP_USER_AGENT'];    
+    $this->protocol = !empty($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : null;
+
+    $this->parse_special('encodings', 'HTTP_ACCEPT_ENCODING', array('utf-8'));    
+    $this->parse_special('charsets', 'HTTP_ACCEPT_CHARSET', array('text/html'));
+    $this->parse_special('accepted_formats', 'HTTP_ACCEPT');
+    $this->parse_special('languages', 'HTTP_ACCEPT_LANGUAGE', array('en-US'));
+    
+    switch ($this->method) {
+        case "GET":
+            $this->data = $_GET;
+            break;                
+        case "POST":
+            $this->data = $_POST;
+            break;                
+        default:
+            parse_str(file_get_contents("php://input"), $this->data);
+            break;                
+    }    
+
+    // Requested output format, if any. 
+    // Format in the URL request string takes priority over the one in HTTP headers, defaults to HTML.
+    if (!empty($this->data['format'])) {
+      $this->format = $this->data['format'];
+      $aliases = $this->common_aliases();
+      if (array_key_exists($this->format, $aliases)) {
+        $this->format = $aliases[$this->format];
+      }
+      unset($this->data['format']);
+    } elseif (!empty($this->accepted_formats[0])) {  
+      $this->format = $this->accepted_formats[0];
+      unset ($this->data['format']);      
+    }
+    
+  }
+  
+  /**
+  * Subclass this function if you need a different set!
+  */
+  protected function common_aliases() {
+    return array(
+      'html' => 'text/html',
+      'txt' => 'text/plain',
+      'xml' => 'application/xml', 
+      'json' => 'application/json',   
+    );
+  }
+  
+  
+  /**
+  * Parses some packed $_SERVER variables into more useful arrays.
+  */
+  private function parse_special($varname, $argname, $default=array()) {
+    $this->$varname = $default; 
+    if (!empty($_SERVER[$argname])) {
+      // parse before the first ";" character
+      $truncated = substr($_SERVER[$argname], 0, strpos($_SERVER[$argname], ";", 0));
+      $truncated = !empty($truncated) ? $truncated : $_SERVER[$argname];
+      $this->$varname = explode(",", $truncated);
+    }    
+  }
+  
+  /**
+  * Make it easy to indicate common formats by mapping them to handy aliases
+  */
+  private function common_format_parsing() {
+  }
+    
+} // end URoute_Request
+
 
 class URoute_Router {
   
-  private static $routes  = array();
-  private static $methods = array('get', 'post', 'put', 'delete', 'head', 'options');
+  protected $routes  = array();
+  protected static $methods = array('get', 'post', 'put', 'delete', 'head', 'options');
   
-  public static function addRoute($params, URoute_Service $service) {
+  /**
+  * Add a new route to the configured list of routes
+  */
+  public function addRoute($params) {
     
-    static $routes = array();
-  
     if (!empty($params['path'])) {
       
       $template = new URoute_Template($params['path']);
@@ -237,18 +378,11 @@ class URoute_Router {
            $template->pattern($key, $pattern);
         }
       }
-      
-      if (isset($params['file'])) {
-        $file = trim($params['file'], '\/');
-        $params['file'] = sprintf('%s/%s', $service->getDirName(), $file);
-      } else {
-        $params['file'] = null;
-      }
-      
+            
       $methods = array_intersect(self::$methods, array_keys($params));
 
       foreach ($methods as $method) {
-        self::$routes[$method][$params['path']] = array(
+        $this->routes[$method][$params['path']] = array(
           'template' => $template,
           'callback' => $params[$method],
           'file'     => $params['file'],
@@ -263,15 +397,21 @@ class URoute_Router {
     return strtolower($_SERVER['REQUEST_METHOD']);
   }
   
-  private static function getRoutes() {
+  private function getRoutes() {
     $method = self::getRequestMethod();
-    return isset(self::$routes[$method]) ? self::$routes[$method] : array();
+    $routes = empty($this->routes[$method]) ? array() : $this->routes[$method];
+    return $routes;
   }
   
-  public static function route($uri) {
+  public function route($uri=null) {
   
-    $routes = self::getRoutes();
-    
+    if (empty($uri)) {
+      $tokens = parse_url($_SERVER['REQUEST_URI']);
+      $uri = $tokens['path'];
+    }
+  
+    $routes = $this->getRoutes();
+        
     try {
     
       foreach ($routes as $route) {
@@ -279,10 +419,9 @@ class URoute_Router {
         $params = $route['template']->match($uri);
   
         if (!is_null($params)) {
-          $callback = URoute_Callback::getCallback($route['callback'], $route['file']);
-          return call_user_func($callback, $params);
-        }
-        
+          $callback = URoute_Callback_Util::getCallback($route['callback'], $route['file']);
+          return $this->invoke_callback($callback, $params);
+        }        
       }
       
       throw new URoute_InvalidPathException('Invalid path');
@@ -293,73 +432,19 @@ class URoute_Router {
     
   }
   
+  /**
+  * Main reason this is a separate function is: in case library users want to change
+  * invokation logic, without having to copy/paste rest of the logic in the route() function.
+  */
+  protected function invoke_callback($callback, $params) {
+    $req = new URoute_Request();
+    $req->params = $params;         
+    $res = new URoute_Response($req);
+    
+    return call_user_func($callback, $req, $res);    
+  }
+  
+
+  
 } // end URoute_Router
 
-abstract class URoute_Service implements URoute_Constants {
-  
-  private $dirname;
-  private $host;
-  private $path;
-  private $endPoint;
-  private $requestURI;
-  
-  public function __construct() {
-    $this->init();
-  }
-  
-  private function init() {    
-    $this->setHost();
-    $this->setEndPoint();
-    $this->service();
-    $this->route();
-  }
-  
-  private function setHost() {
-    $host = $_SERVER['SERVER_NAME'];
-    if (!preg_match('~^http~', $host, $matches)) {
-      $host = 'http://' . $host;
-    }
-    $this->host = $host;
-  }
-  
-  private function setRequestURI() {
-    $tokens = parse_url($_SERVER['REQUEST_URI']);
-    $path   = str_replace($this->path, '', $tokens['path']);
-    $this->requestURI = $path == '/' ? '' : $path;
-  }
-  
-  protected function setEndPoint() {
-    $class   = new ReflectionClass($this);
-    $file    = $class->getFileName();
-    $dirname = dirname($file);
-    $path    = str_replace($_SERVER['DOCUMENT_ROOT'], '', $dirname);
-    
-    $this->dirname  = $dirname;
-    $this->path     = $path;
-    $this->endPoint = $this->host . $this->path;
-    
-    $this->setRequestURI();
-  }
-  
-  public function addRoute($params) {
-    URoute_Router::addRoute($params, $this);
-  }
-  
-  public function route() {
-    try {
-      URoute_Router::route($this->requestURI);
-    } catch(Exception $ex) {
-      $this->error($ex);
-    }
-  }
-  
-  public function getDirName() {
-    return $this->dirname;
-  }
-  
-  protected abstract function service();
-  protected abstract function error($exception);
-  
-}
-
-?>
