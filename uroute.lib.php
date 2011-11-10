@@ -79,10 +79,15 @@ class URoute_Callback_Util {
     }
     
   }
+  
 }
 
 class URoute_Template {
+  
+  private static $globalQueryParams = array();
+  
   private $template  = null;
+  private $params    = array();
   private $callbacks = array();
   
   public function __construct($path) {
@@ -104,7 +109,7 @@ class URoute_Template {
       $expression  = str_replace($matches['match'], $expressions, $expression);
     }
     
-    return '~^'. $expression .'$~';
+    return sprintf('~^%s$~', $expression);
   }
   
   public function pattern($token, $pattern = null) {
@@ -128,11 +133,34 @@ class URoute_Template {
       }
       
       return sprintf($pattern, $token);
+       
     }    
   }
   
+  public function addQueryParam($name, $pattern = '', $defaultValue = null) {
+    if (!$pattern) {
+      $pattern = self::PATTERN_ANY;
+    }
+    $this->params[$name] = (object) array(
+      'pattern' => sprintf($pattern, $name),
+      'value'   => $defaultValue
+    );
+  }
+  
+  public static function addGlobalQueryParam($name, $pattern = '', $defaultValue = null) {
+    if (!$pattern) {
+      $pattern = self::PATTERN_ANY;
+    }
+    self::$globalQueryParams[$name] = (object) array(
+      'pattern' => sprintf($pattern, $name),
+      'value'   => $defaultValue
+    );
+  }
+  
   public function match($uri) {
+    
     try {
+    
       $uri = rtrim($uri, '\/');
       
       if (preg_match($this->getExpression(), $uri, $matches)) {
@@ -145,7 +173,6 @@ class URoute_Template {
             if (isset($this->callbacks[$k])) {              
               $callback = URoute_Callback::getCallback($this->callbacks[$k]);
               $value    = call_user_func($callback, $v);
-              
               if ($value) {
                 $matches[$k] = $value;
               } else {
@@ -159,17 +186,50 @@ class URoute_Template {
           }
         }
   
-        return $matches;      
+        $params = array_merge(self::$globalQueryParams, $this->params);
+  
+        if (!empty($params)) {
+          
+          $matched = false;
+          
+          foreach($params as $name=>$param) {
+            
+            if (!isset($_GET[$name]) && $param->value) {
+              $_GET[$name] = $param->value;
+              $matched = true;
+            } else if ($param->pattern && isset($_GET[$name])) {
+              $result = preg_match(sprintf('~^%s$~', $param->pattern), $_GET[$name]);
+              if (!$result && $param->value) {
+                $_GET[$name] = $param->value;
+                $result = true;
+              }
+              $matched = $result;
+            } else {
+              $matched = false;
+            }          
+            
+            if ($matched == false) {
+              throw new Exception('Request do not match');
+            }
+            
+          }
+          
+        }
+        
+        return $matches;
+        
       }
       
     } catch(Exception $ex) {
       throw $ex;
     }
+    
   }
   
   public static function regex($pattern) {
     return '(?P<%s>' . $pattern . ')';
   }
+  
 }
 
 
@@ -181,6 +241,9 @@ class URoute_Response {
   /** Ordered chunks of the output buffer **/
   public $chunks = array();
   
+  public $code;
+  
+  private $format;
   private $req;
 
   function __construct($request=null) {
@@ -200,7 +263,11 @@ class URoute_Response {
   *  @param $code
   *      HTTP Code
   */
-  public function send($code=200) {  
+  public function send($code=null) {  
+    
+    $code = (!empty($this->code) && empty($code)) ? $this->code : $code;
+    $code = empty($code) ? 200 : $code; // default value if never set
+  
     $codes = $this->codes();
     if (array_key_exists($code, $codes)) {
       $resp_text = $codes[$code];
@@ -210,12 +277,29 @@ class URoute_Response {
       throw new URoute_InvalidResponseCodeException("Invalid Response Code: " . $code);
     }
     
-    $format = $this->req->format;
+    // If no format was set explicitely, use the request format for response.
+    $format = !empty($this->format) ? $this->format : $this->req->format;
     header("Content-Type: $format;");    
     
     $out = implode("", $this->chunks);
     echo ($out);
     exit(); //prevent any further output
+  }
+  
+  /**
+  * Set output format. Common aliases like: xml, json, html and txt are supported and
+  * automatically converted to proper HTTP content type definitions.
+  */
+  public function setFormat($format) {
+    $aliases = $this->req->common_aliases();
+    if (array_key_exists($format, $aliases)) {
+      $format = $aliases[$format];
+    }    
+    $this->format = $format;
+  }
+  
+  public function getFormat() {
+    return $this->format;
   }
     
   private function codes() {
@@ -328,7 +412,7 @@ class URoute_Request {
   /**
   * Subclass this function if you need a different set!
   */
-  protected function common_aliases() {
+  public function common_aliases() {
     return array(
       'html' => 'text/html',
       'txt' => 'text/plain',
