@@ -3,15 +3,15 @@
 class MyController {
 	
   public function getPage($req, $res) {
-    $res->add(pre($req->params));
-    $res->add(pre($req->data));
-    $res->send(301);    
+    $res->add("<h1>API Request Input:</h1>");
+    $res->add(pre($req));
+    $res->send(201);
   }
 	
   public function postPage($req, $res) {
-    $res->add(pre($req->params));
-    $res->add(pre($req->data));
-    $res->send(200);    
+    $res->add("<h1>API Request Input:</h1>");
+    $res->add(pre($req));
+    $res->send(201);
   }
 	
 }

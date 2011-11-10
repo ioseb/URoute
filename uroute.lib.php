@@ -238,8 +238,15 @@ class URoute_Template {
 */
 class URoute_Response {
 
+  /** Ordered chunks of the output buffer **/
   public $chunks = array();
+  
+  private $req;
 
+  function __construct($request=null) {
+    $this->req = $request;  
+  }
+  
   /**
   * Send output to the client
   */
@@ -248,7 +255,7 @@ class URoute_Response {
   }
   
   /**
-  * Send output to client
+  * Send output to client and end request
   *
   *  @param $code
   *      HTTP Code
@@ -257,16 +264,20 @@ class URoute_Response {
     $codes = $this->codes();
     if (array_key_exists($code, $codes)) {
       $resp_text = $codes[$code];
-      header("HTTP/1.1 $code $resp_text");
+      $protocol = $this->req->protocol;
+      header("$protocol $code $resp_text");
     } else {
       throw new URoute_InvalidResponseCodeException("Invalid Response Code: " . $code);
     }
+    
+    $format = $this->req->format;
+    header("Content-Type: $format;");    
     
     $out = implode("", $this->chunks);
     echo ($out);
     exit(); //prevent any further output
   }
-  
+    
   private function codes() {
     return array(  
       '100' => 'Continue',
@@ -322,8 +333,90 @@ class URoute_Request {
   public $params;
   public $data;
   public $format;
+  public $accepted_formats;
+  public $encodings;
+  public $charsets;  
+  public $languages;  
   public $version;
+  public $method;
+  public $clientIP;
+  public $userAgent;
+  public $protocol;
   
+  function __construct() {
+    $this->method = $_SERVER['REQUEST_METHOD'];
+    
+    $this->clientIP = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : "";
+    $this->clientIP = (empty($this->clientIP) && !empty($_SERVER['REMOTE_ADDR'])) ? $_SERVER['REMOTE_ADDR'] : "";  
+    
+    $this->userAgent = empty($_SERVER['HTTP_USER_AGENT']) ? "" : $_SERVER['HTTP_USER_AGENT'];    
+    $this->protocol = !empty($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : null;
+
+    $this->parse_special('encodings', 'HTTP_ACCEPT_ENCODING', array('utf-8'));    
+    $this->parse_special('charsets', 'HTTP_ACCEPT_CHARSET', array('text/html'));
+    $this->parse_special('accepted_formats', 'HTTP_ACCEPT');
+    $this->parse_special('languages', 'HTTP_ACCEPT_LANGUAGE', array('en-US'));
+    
+    switch ($this->method) {
+        case "GET":
+            $this->data = $_GET;
+            break;                
+        case "POST":
+            $this->data = $_POST;
+            break;                
+        default:
+            parse_str(file_get_contents("php://input"), $this->data);
+            break;                
+    }    
+
+    // Requested output format, if any. 
+    // Format in the URL request string takes priority over the one in HTTP headers, defaults to HTML.
+    if (!empty($this->data['format'])) {
+      $this->format = $this->data['format'];
+      $aliases = $this->common_aliases();
+      if (array_key_exists($this->format, $aliases)) {
+        $this->format = $aliases[$this->format];
+      }
+      unset($this->data['format']);
+    } elseif (!empty($this->accepted_formats[0])) {  
+      $this->format = $this->accepted_formats[0];
+      unset ($this->data['format']);      
+    }
+    
+  }
+  
+  /**
+  * Subclass this function if you need a different set!
+  */
+  protected function common_aliases() {
+    return array(
+      'html' => 'text/html',
+      'txt' => 'text/plain',
+      'xml' => 'application/xml', 
+      'json' => 'application/json',   
+    );
+  }
+  
+  
+  /**
+  * Parses some packed $_SERVER variables into more useful arrays.
+  */
+  private function parse_special($varname, $argname, $default=array()) {
+    $this->$varname = $default; 
+    if (!empty($_SERVER[$argname])) {
+      // parse before the first ";" character
+      $truncated = substr($_SERVER[$argname], 0, strpos($_SERVER[$argname], ";", 0));
+      $truncated = !empty($truncated) ? $truncated : $_SERVER[$argname];
+      $this->$varname = explode(",", $truncated);
+    }    
+  }
+  
+  /**
+  * Make it easy to indicate common formats by mapping them to handy aliases
+  */
+  private function common_format_parsing() {
+  }
+    
 } // end URoute_Request
 
 
@@ -388,14 +481,7 @@ class URoute_Router {
   
         if (!is_null($params)) {
           $callback = URoute_Callback_Util::getCallback($route['callback'], $route['file']);
-          $data = $this->getEnv();
-          
-          $req = new URoute_Request();
-            $req->params = $params;
-            $req->data = $data;          
-          $res = new URoute_Response();
-          
-          return call_user_func($callback, $req, $res);
+          return $this->invoke_callback($callback, $params);
         }        
       }
       
@@ -407,32 +493,19 @@ class URoute_Router {
     
   }
   
-  private function getEnv() {
-    $env = new stdClass;
+  /**
+  * Main reason this is a separate function is: in case library users want to change
+  * invokation logic, without having to copy/paste rest of the logic in the route() function.
+  */
+  protected function invoke_callback($callback, $params) {
+    $req = new URoute_Request();
+    $req->params = $params;         
+    $res = new URoute_Response($req);
     
-    $env->method = $_SERVER['REQUEST_METHOD'];
-    
-    $env->clientIP = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : "";
-    $env->clientIP = (empty($env->clientIP) && !empty($_SERVER['REMOTE_ADDR'])) ? $_SERVER['REMOTE_ADDR'] : "";  
-    
-    $env->userAgent = empty($_SERVER['HTTP_USER_AGENT']) ? "" : $_SERVER['HTTP_USER_AGENT'];    
-    
-    switch ($env->method) {
-        case "GET":
-            $env->requestData = $_GET;
-            break;                
-        case "POST":
-            $env->requestData = $_POST;
-            break;                
-        case "PUT":
-        case "DELETE":
-            parse_str(file_get_contents("php://input"), $env->requestData);
-            break;                
-    }
-    
-    return (array)$env;
-    
+    return call_user_func($callback, $req, $res);    
   }
+  
+
   
 } // end URoute_Router
 
