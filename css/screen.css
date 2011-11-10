@@ -56,15 +56,15 @@ code, pre, tt, textarea {
 pre {
   font-size: 12px; /** 12/14 **/
   padding: 2px 0 2px 12px;
-  border-left: 6px solid #AA9;
-  background-color: #efefef;
+  border-left: 6px solid #D8D8ED;
+  background-color: #F8F8FF;
   margin: 0px 0 30px;
 }
 code, pre, tt {
   font-family: Monaco, Consolas, "Lucida Console", monospace;
   font-size: 12px;
   line-height: 18px;
-  color: #555529;
+  color: #5F5529;
 }
 
 
