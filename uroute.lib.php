@@ -104,7 +104,7 @@ class URoute_Template {
       $expression  = str_replace($matches['match'], $expressions, $expression);
     }
     
-    return sprintf('~^%s$~', $expression);
+    return '~^'. $expression .'$~';
   }
   
   public function pattern($token, $pattern = null) {
@@ -145,6 +145,7 @@ class URoute_Template {
             if (isset($this->callbacks[$k])) {              
               $callback = URoute_Callback::getCallback($this->callbacks[$k]);
               $value    = call_user_func($callback, $v);
+              
               if ($value) {
                 $matches[$k] = $value;
               } else {
