@@ -14,7 +14,7 @@ http://ioseb.github.com/URoute/
 
 (The MIT License)
 
-Copyright (c) 2009-2011 TJ Holowaychuk &lt;tj@vision-media.ca&gt;
+Copyright (c) 2011 Ioseb Dzmanashvili and Irakli Nadareishvili
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
