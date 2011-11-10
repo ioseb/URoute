@@ -5,7 +5,7 @@ require_once(dirname(__FILE__) .'/../uroute.lib.php');
 class WebService extends URoute_Service {
   
   public function service() {
-    
+
     $this->addRoute(array(
       'path'     => '/pages/{id}/{categories}/{name}/{year}',
       'handlers' => array(
