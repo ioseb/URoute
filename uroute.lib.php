@@ -274,7 +274,7 @@ class URoute_Response {
   *  @param $code
   *      HTTP response Code
   */  
-  public function flush() {
+  public function flush($code=null) {
     $code = (!empty($this->code) && empty($code)) ? $this->code : $code;
     $code = empty($code) ? 200 : $code; // default value if never set
   
