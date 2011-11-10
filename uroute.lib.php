@@ -261,10 +261,20 @@ class URoute_Response {
   * Send output to client and end request
   *
   *  @param $code
-  *      HTTP Code
+  *      HTTP response Code
   */
-  public function send($code=null) {  
-    
+  public function send($code=null) {      
+    $this->flush($code);
+    exit(); //prevent any further output
+  }
+  
+  /**
+  * Send output to client without ending the script
+  *
+  *  @param $code
+  *      HTTP response Code
+  */  
+  public function flush() {
     $code = (!empty($this->code) && empty($code)) ? $this->code : $code;
     $code = empty($code) ? 200 : $code; // default value if never set
   
@@ -283,7 +293,6 @@ class URoute_Response {
     
     $out = implode("", $this->chunks);
     echo ($out);
-    exit(); //prevent any further output
   }
   
   /**
