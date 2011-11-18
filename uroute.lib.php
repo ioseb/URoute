@@ -479,7 +479,7 @@ class URoute_Router {
         $this->routes[$method][$params['path']] = array(
           'template' => $template,
           'callback' => $params[$method],
-          'file'     => $params['file'],
+          'file'     => !empty($params['file']) ? $params['file'] : '',
         );
       }
       
