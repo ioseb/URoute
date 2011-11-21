@@ -419,6 +419,16 @@ class URoute_Request {
   }
   
   /**
+  * Covenience method that checks is data item is empty to avoid notice-level warnings
+  *
+  *    @param $idx
+  *        name o the data variable (either request var or HTTP body var).
+  */ 
+  public function get_var($idx) {      
+    return !empty($this->data[$idx]) ? $this->data[$idx] : null;      
+  }
+  
+  /**
   * Subclass this function if you need a different set!
   */
   public function common_aliases() {
