@@ -100,6 +100,10 @@ When invoked callbacks get two arguments:
 		<script src="https://gist.github.com/1353603.js?file=HTTPOutput.php"></script>
 2. $res (response) object is used to incrementally create content. You can add chunks of text to the output buffer by calling: $res->add (String) and once you are done you can send entire buffer to the HTTP client by issuing: $res->send(<HTTP_RESPONSE_CODE>). HTTP_RESPONSE_CODE is an optional parameter which defaults to (you guessed it:) 200.
 
+# Convenience Functions
+
+1. $req->get_var('varname') - since $req object populates $data object, you can access request variables (request parameters or HTTP Body data, depending on the type of request) through the array directly. However due to malformed clients or some other application logic, variable may not be set, causing PHP to throw a warning. Instead of having you check each call to $req->data['varname'] on being empty URoute provides a convenience method: $req->get_var('varanme').
+
 # A More Advanced Router Example
 
 <pre>
