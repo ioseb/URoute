@@ -134,3 +134,24 @@ function handle_year($param) {
   ) : null;
 }
 </pre>
+
+# Routing to Entities
+
+So far we have discussed routing individual URI patterns. However, when building a RESTful API, you often need to create full Resources or Endpoints - API lingo for objects that can be managed in a full: Create, Read, Update, Delete (CRUD) lifecycle.
+
+One way you can do this is to fully declare all four routes. But that would mean a lot of duplicated configuration. And we hate code duplication, so here's a nifty shortcut you can use:
+
+<pre>
+$router->addRoute(array(
+      'path'     => '/books/{id}',
+      'handlers' => array(
+        'id'         => URoute_Constants::PATTERN_DIGIT, 
+      ),
+      'get'      => array('MyController', 'getBook'),
+      'post'     => array('MyController', 'createBook'),
+      'put'      => array('MyController', 'updateBook'),
+      'delete'     => array('MyController', 'deleteBook'),
+      'file'     => 'controllers/bookcontroller.php'
+    )
+);
+</pre>
